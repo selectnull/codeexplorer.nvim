@@ -1,5 +1,3 @@
-local M = {}
-
 local lsp = require "codeexplorer.lsp"
 
 --- Close the CodeExplorer window and move the cursor to selected symbol
@@ -13,17 +11,21 @@ local function set_current_line()
   vim.api.nvim_win_close(0, false)
 
   -- set the cursor position
-  vim.api.nvim_win_set_cursor(0, { tonumber(row), tonumber(col) - 1 })
+  if row and col then
+    vim.api.nvim_win_set_cursor(0, { tonumber(row), tonumber(col) - 1 })
+  end
 end
 
 --- Create a CodeExplorer window
 ---@param output [string] The text content (a list of lines) of the window
 local function create_window(output)
   local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, output)
-
   local width = 60
-  local height = #output
+  local height = #output + 2
+
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "CodeExplorer", string.rep("—", width) })
+  vim.api.nvim_buf_set_lines(buf, 3, -1, false, output)
+
   vim.api.nvim_open_win(buf, true, {
     relative = "editor",
     width = width,
@@ -83,5 +85,3 @@ end
 
 -- Command to display the results
 vim.api.nvim_create_user_command("CodeExplorer", show_code_explorer, {})
-
-return M
