@@ -1,26 +1,30 @@
 local M = {}
 
+local lsp = require "codeexplorer.lsp"
+
+--- Close the CodeExplorer window and move the cursor to selected symbol
 local function set_current_line()
   local current_line = vim.api.nvim_win_get_cursor(0)[1]
   local line_content = vim.api.nvim_buf_get_lines(0, current_line - 1, current_line, false)[1]
 
   local row, col = string.match(line_content, "- (%d+):(%d+)$")
 
-  -- close the floating window
+  -- close the CodeExplorer window
   vim.api.nvim_win_close(0, false)
 
   -- set the cursor position
   vim.api.nvim_win_set_cursor(0, { tonumber(row), tonumber(col) - 1 })
 end
 
+--- Create a CodeExplorer window
+---@param output [string] The text content (a list of lines) of the window
 local function create_window(output)
-  -- Display in a floating window
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, output)
 
   local width = 60
   local height = #output
-  local win = vim.api.nvim_open_win(buf, true, {
+  vim.api.nvim_open_win(buf, true, {
     relative = "editor",
     width = width,
     height = height,
@@ -41,41 +45,10 @@ local function create_window(output)
   vim.keymap.set("n", "<CR>", set_current_line, { buffer = true })
 end
 
-local function get_kind_name(kind)
-  local kinds = {
-    [1] = "File",
-    [2] = "Module",
-    [3] = "Namespace",
-    [4] = "Package",
-    [5] = "Class",
-    [6] = "Method",
-    [7] = "Property",
-    [8] = "Field",
-    [9] = "Constructor",
-    [10] = "Enum",
-    [11] = "Interface",
-    [12] = "Function",
-    [13] = "Variable",
-    [14] = "Constant",
-    [15] = "String",
-    [16] = "Number",
-    [17] = "Boolean",
-    [18] = "Array",
-    [19] = "Object",
-    [20] = "Key",
-    [21] = "Null",
-    [22] = "EnumMember",
-    [23] = "Struct",
-    [24] = "Event",
-    [25] = "Operator",
-    [26] = "TypeParameter",
-  }
-  return kinds[kind] or "Unknown"
-end
-
--- Function to get and print document symbols
+--- Query the Language Server for the document symbols
+---@param callback function
 local function list_symbols(callback)
-  local request_handler = function(err, result, ctx, _)
+  local request_handler = function(err, result, _, _)
     local symbols = {}
     if err ~= nil then
       vim.notify("Error when requesting symbols: " .. err.message)
@@ -84,7 +57,7 @@ local function list_symbols(callback)
 
     for _, symbol in ipairs(result) do
       local line = "("
-        .. get_kind_name(symbol.kind)
+        .. lsp.get_kind_name(symbol.kind)
         .. ") "
         .. symbol.name
         .. " - "
