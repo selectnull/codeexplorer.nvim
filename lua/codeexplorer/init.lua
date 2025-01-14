@@ -21,10 +21,11 @@ end
 local function create_window(output)
   local buf = vim.api.nvim_create_buf(false, true)
   local width = 60
-  local height = #output + 2
+  local header_height = 2
+  local height = #output + header_height
 
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "CodeExplorer", string.rep("—", width) })
-  vim.api.nvim_buf_set_lines(buf, 3, -1, false, output)
+  vim.api.nvim_buf_set_lines(buf, header_height + 1, -1, false, output)
 
   local win = vim.api.nvim_open_win(buf, true, {
     relative = "editor",
