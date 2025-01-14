@@ -26,7 +26,7 @@ local function create_window(output)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "CodeExplorer", string.rep("—", width) })
   vim.api.nvim_buf_set_lines(buf, 3, -1, false, output)
 
-  vim.api.nvim_open_win(buf, true, {
+  local win = vim.api.nvim_open_win(buf, true, {
     relative = "editor",
     width = width,
     height = height,
@@ -35,6 +35,7 @@ local function create_window(output)
     style = "minimal",
     border = "rounded",
   })
+  vim.api.nvim_win_set_cursor(win, { 3, 0 })
 
   -- Set buffer options
   local opts = { buf = 0 }
