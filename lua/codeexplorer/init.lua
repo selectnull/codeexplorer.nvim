@@ -49,7 +49,7 @@ end
 
 --- Query the Language Server for the document symbols
 ---@param callback function
-local function list_symbols(callback)
+local function query_symbols(callback)
   local request_handler = function(err, result, _, _)
     local symbols = {}
     if err ~= nil then
@@ -79,9 +79,7 @@ local function list_symbols(callback)
   )
 end
 
-local function show_code_explorer()
-  list_symbols(create_window)
-end
-
--- Command to display the results
-vim.api.nvim_create_user_command("CodeExplorer", show_code_explorer, {})
+--- CodeExplorer command
+vim.api.nvim_create_user_command("CodeExplorer", function()
+  query_symbols(create_window)
+end, {})
