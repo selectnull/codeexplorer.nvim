@@ -26,6 +26,27 @@ local function set_current_line()
   end
 end
 
+local function set_quickfix()
+  local line = { filename = "", lnum = nil, col = nil, text = "" }
+  local qf = {}
+  for _, symbol in ipairs(M._symbols) do
+    line = {
+      filename = M._filename,
+      lnum = symbol.position.row,
+      col = symbol.position.col,
+      text = symbol.name .. " (" .. symbol.kind .. ")",
+      type = "I",
+    }
+    table.insert(qf, line)
+  end
+  vim.fn.setqflist(qf, "r")
+
+  -- close the CodeExplorer window
+  vim.api.nvim_win_close(0, false)
+
+  vim.cmd "copen"
+end
+
 --- Create a floating window
 ---@param buf integer Buffer number
 ---@param width integer Window width
@@ -70,6 +91,8 @@ local function render_symbols(symbols)
 
   -- close
   vim.api.nvim_buf_set_keymap(buf, "n", "q", ":close<CR>", { silent = true, noremap = true })
+  -- set keyboard shortcut to fill the quickfix list
+  vim.keymap.set("n", "<C-q>", set_quickfix, { buffer = true })
   -- close and go to symbol
   vim.keymap.set("n", "<CR>", set_current_line, { buffer = true })
 end
@@ -77,6 +100,7 @@ end
 --- Query the Language Server for the document symbols
 ---@param render_callback function
 local function query_symbols(render_callback)
+  M._filename = vim.api.nvim_buf_get_name(0)
   local request_handler = function(err, result, _, _)
     local symbols = {}
     if err ~= nil then
