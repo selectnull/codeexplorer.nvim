@@ -1,6 +1,6 @@
 local M = {}
 
-M.get_kind_name = function(kind)
+M.get_kind_name = function(self, kind)
   local kinds = {
     [1] = "File",
     [2] = "Module",
@@ -30,6 +30,38 @@ M.get_kind_name = function(kind)
     [26] = "TypeParameter",
   }
   return kinds[kind] or "Unknown"
+end
+
+--- Query the Language Server for the document symbols
+---@param get_symbols function
+M.query_symbols = function(self, get_symbols)
+  local symbols = {}
+
+  local request_handler = function(err, result, _, _)
+    if err ~= nil then
+      vim.notify("Error when requesting symbols: " .. err.message)
+      return
+    end
+
+    local new_symbol = { name = nil, kind = nil, position = { -1, -1 } }
+
+    for _, symbol in ipairs(result) do
+      new_symbol = {
+        name = symbol.name,
+        kind = self:get_kind_name(symbol.kind),
+        position = { row = symbol.selectionRange.start.line + 1, col = symbol.selectionRange.start.character + 1 },
+      }
+      table.insert(symbols, new_symbol)
+    end
+    get_symbols(symbols)
+  end
+
+  vim.lsp.buf_request(
+    0,
+    "textDocument/documentSymbol",
+    { textDocument = vim.lsp.util.make_text_document_params() },
+    request_handler
+  )
 end
 
 return M

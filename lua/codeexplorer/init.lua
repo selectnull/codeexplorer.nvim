@@ -1,6 +1,7 @@
 local M = {}
 
 local lsp = require "codeexplorer.lsp"
+local ui = require "codeexplorer.ui"
 
 ---@class codeexplorer.Position
 ---@field row integer
@@ -47,25 +48,6 @@ local function set_quickfix()
   vim.cmd "copen"
 end
 
---- Create a floating window
----@param buf integer Buffer number
----@param width integer Window width
----@param height integer Window height
-local function create_window(buf, width, height)
-  local win = vim.api.nvim_open_win(buf, true, {
-    relative = "editor",
-    width = width,
-    height = height,
-    row = math.floor((vim.o.lines - height) / 2),
-    col = math.floor((vim.o.columns - width) / 2),
-    style = "minimal",
-    border = "rounded",
-  })
-  vim.api.nvim_win_set_cursor(win, { 3, 0 })
-
-  return win
-end
-
 --- Render symbols
 ---@param symbols codeexplorer.Symbol[] The list of symbols to render
 local function render_symbols(symbols)
@@ -82,7 +64,7 @@ local function render_symbols(symbols)
   end
   vim.api.nvim_buf_set_lines(buf, header_height + 1, -1, false, lines)
 
-  create_window(buf, width, height)
+  ui:create_window(buf, width, height)
 
   -- Set buffer options
   local opts = { buf = 0 }
@@ -97,42 +79,14 @@ local function render_symbols(symbols)
   vim.keymap.set("n", "<CR>", set_current_line, { buffer = true })
 end
 
---- Query the Language Server for the document symbols
----@param render_callback function
-local function query_symbols(render_callback)
-  M._filename = vim.api.nvim_buf_get_name(0)
-  local request_handler = function(err, result, _, _)
-    local symbols = {}
-    if err ~= nil then
-      vim.notify("Error when requesting symbols: " .. err.message)
-      return
-    end
-
-    local new_symbol = { name = nil, kind = nil, position = { -1, -1 } }
-
-    for _, symbol in ipairs(result) do
-      new_symbol = {
-        name = symbol.name,
-        kind = lsp.get_kind_name(symbol.kind),
-        position = { row = symbol.selectionRange.start.line + 1, col = symbol.selectionRange.start.character + 1 },
-      }
-      table.insert(symbols, new_symbol)
-    end
-    M._symbols = symbols
-    render_callback(symbols)
-  end
-
-  vim.lsp.buf_request(
-    0,
-    "textDocument/documentSymbol",
-    { textDocument = vim.lsp.util.make_text_document_params() },
-    request_handler
-  )
-end
-
---- CodeExplorer command
+--- CodeExplorer user command
 vim.api.nvim_create_user_command("CodeExplorer", function()
-  query_symbols(render_symbols)
+  M._symbols = {}
+  M._filename = vim.api.nvim_buf_get_name(0)
+  M._symbols = lsp:query_symbols(function(symbols)
+    M._symbols = symbols
+    render_symbols(symbols)
+  end)
 end, {})
 
 return M
