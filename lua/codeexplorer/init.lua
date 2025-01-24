@@ -56,7 +56,7 @@ local function render_symbols(symbols)
   local header_height = 2
   local height = #symbols + header_height
 
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "CodeExplorer", string.rep("—", width) })
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "CodeExplorer", string.rep("─", width) })
   local lines = {}
   for _, symbol in ipairs(symbols) do
     local line = symbol.name .. " (" .. symbol.kind .. ")"
