@@ -1,4 +1,6 @@
-local M = {}
+local M = {
+  header_height = 3,
+}
 
 local lsp = require "codeexplorer.lsp"
 local ui = require "codeexplorer.ui"
@@ -20,9 +22,9 @@ local function set_current_line()
   vim.api.nvim_win_close(0, false)
 
   -- set the cursor position
-  -- header height is 2 lines, skip it
-  if current_line > 2 then
-    local selected = M._symbols[current_line - 2]
+  -- skip header height lines
+  if current_line > M.header_height then
+    local selected = M._symbols[current_line - M.header_height]
     vim.api.nvim_win_set_cursor(0, { selected.position.row, selected.position.col - 1 })
   end
 end
@@ -52,17 +54,17 @@ end
 ---@param symbols codeexplorer.Symbol[] The list of symbols to render
 local function render_symbols(symbols)
   local buf = vim.api.nvim_create_buf(false, true)
-  local width = 60
-  local header_height = 2
-  local height = #symbols + header_height
+  local width = math.min(math.floor(vim.api.nvim_win_get_width(0) * 0.8), 120)
+  local height = #symbols + M.header_height
 
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "CodeExplorer", string.rep("─", width) })
+  local header = { "CodeExplorer", ui.get_relative_path(M._filename), string.rep("─", width) }
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, header)
   local lines = {}
   for _, symbol in ipairs(symbols) do
     local line = symbol.name .. " (" .. symbol.kind .. ")"
     table.insert(lines, line)
   end
-  vim.api.nvim_buf_set_lines(buf, header_height + 1, -1, false, lines)
+  vim.api.nvim_buf_set_lines(buf, M.header_height + 1, -1, false, lines)
 
   ui:create_window(buf, width, height)
 
