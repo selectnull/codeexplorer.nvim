@@ -33,8 +33,8 @@ M.get_kind_name = function(self, kind)
 end
 
 --- Query the Language Server for the document symbols
----@param get_symbols function
-M.query_symbols = function(self, get_symbols)
+---@param callback function
+M.query_symbols = function(self, callback)
   local symbols = {}
 
   local request_handler = function(err, result, _, _)
@@ -53,7 +53,7 @@ M.query_symbols = function(self, get_symbols)
       }
       table.insert(symbols, new_symbol)
     end
-    get_symbols(symbols)
+    callback(symbols)
   end
 
   vim.lsp.buf_request(
