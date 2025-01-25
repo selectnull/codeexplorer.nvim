@@ -35,7 +35,7 @@ end
 
 --- Query the Language Server for the document symbols
 ---@param callback function
-M.query_symbols = function(self, callback)
+function M:query_symbols(callback)
   local symbols = {}
 
   local request_handler = function(err, result, _, _)
