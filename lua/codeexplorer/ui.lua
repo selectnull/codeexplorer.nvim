@@ -1,7 +1,7 @@
 local M = {
   header_height = 3,
-  _symbols = nil,
-  _filename = nil,
+  symbols = nil,
+  filename = nil,
 }
 
 local utils = require "codeexplorer.utils"
@@ -16,7 +16,7 @@ local function set_current_line()
   -- set the cursor position
   -- skip header height lines
   if current_line > M.header_height then
-    local selected = M._symbols[current_line - M.header_height]
+    local selected = M.symbols[current_line - M.header_height]
     vim.api.nvim_win_set_cursor(0, { selected.position.row, selected.position.col - 1 })
   end
 end
@@ -24,9 +24,9 @@ end
 local function set_quickfix()
   local line = { filename = "", lnum = nil, col = nil, text = "" }
   local qf = {}
-  for _, symbol in ipairs(M._symbols) do
+  for _, symbol in ipairs(M.symbols) do
     line = {
-      filename = M._filename,
+      filename = M.filename,
       lnum = symbol.position.row,
       col = symbol.position.col,
       text = symbol.name .. " (" .. symbol.kind .. ")",
@@ -61,38 +61,62 @@ function M:create_window(buf, width, height)
   return win
 end
 
---- Render symbols
----@param symbols codeexplorer.Symbol[] The list of symbols to render
----@param filename string Filename
-function M:render_symbols(symbols, filename)
-  self._symbols = symbols
-  self._filename = filename
+function M:create_buffer()
   local buf = vim.api.nvim_create_buf(false, true)
-  local width = math.min(math.floor(vim.api.nvim_win_get_width(0) * 0.8), 120)
-  local height = #symbols + M.header_height
 
-  local header = { "CodeExplorer", " " .. utils.get_relative_path(filename), string.rep("─", width) }
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, header)
-  local lines = {}
-  for _, symbol in ipairs(symbols) do
-    local line = " " .. symbol.name .. " (" .. symbol.kind .. ")"
-    table.insert(lines, line)
-  end
-  vim.api.nvim_buf_set_lines(buf, M.header_height + 1, -1, false, lines)
+  -- set buffer options
+  vim.api.nvim_set_option_value("buftype", "nofile", { buf = buf })
 
-  self:create_window(buf, width, height)
+  return buf
+end
 
-  -- Set buffer options
-  local opts = { buf = 0 }
-  vim.api.nvim_set_option_value("modifiable", false, opts)
-  vim.api.nvim_set_option_value("buftype", "nofile", opts)
+function M:set_buf_modifiable(buf, modifiable)
+  vim.api.nvim_set_option_value("modifiable", modifiable, { buf = buf })
+end
 
+function M:set_keymaps(buf)
   -- close
   vim.api.nvim_buf_set_keymap(buf, "n", "q", ":close<CR>", { silent = true, noremap = true })
   -- set keyboard shortcut to fill the quickfix list
   vim.keymap.set("n", "<C-q>", set_quickfix, { buffer = true })
   -- close and go to symbol
   vim.keymap.set("n", "<CR>", set_current_line, { buffer = true })
+end
+
+--- Render window header
+function M:render_header(buf, width)
+  local header = { "CodeExplorer", " " .. utils.get_relative_path(self.filename), string.rep("─", width) }
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, header)
+end
+
+--- Render symbols
+function M:render_symbols(buf, symbols)
+  local lines = {}
+  for _, symbol in ipairs(symbols) do
+    local line = " " .. symbol.name .. " (" .. symbol.kind .. ")"
+    table.insert(lines, line)
+  end
+  vim.api.nvim_buf_set_lines(buf, M.header_height + 1, -1, false, lines)
+end
+
+--- Render symbols
+---@param symbols codeexplorer.Symbol[] The list of symbols to render
+---@param filename string Filename
+function M:open(symbols, filename)
+  self.symbols = symbols
+  self.filename = filename
+
+  local width = math.min(math.floor(vim.api.nvim_win_get_width(0) * 0.8), 120)
+  local height = #symbols + M.header_height
+
+  local buf = self:create_buffer()
+
+  self:render_header(buf, width)
+  self:render_symbols(buf, symbols)
+
+  self:create_window(buf, width, height)
+  self:set_buf_modifiable(buf, false)
+  self:set_keymaps(buf)
 end
 
 return M
