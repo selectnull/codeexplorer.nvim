@@ -17,11 +17,10 @@ end, { desc = "open codeexplorer" })
 ```
 ## Development
 
-Clone locally plenary.nvim `git clone https://github.com/nvim-lua/plenary.nvim`.
-
 From the project root:
 
 ```bash
-export PLENARY_PATH="/path/to/plenary.nvim"
 make test
 ```
+
+`make test` will clone `plenary.nvim` into `.deps/` on first run.
