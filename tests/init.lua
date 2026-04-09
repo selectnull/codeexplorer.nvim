@@ -12,6 +12,12 @@ local function add_plenary_to_rtp()
     return
   end
 
+  local lazy_path = vim.fn.stdpath("data") .. "/lazy/plenary.nvim"
+  if vim.uv.fs_stat(lazy_path) ~= nil then
+    vim.opt.runtimepath:prepend(lazy_path)
+    return
+  end
+
   local matches = vim.fn.glob(vim.fn.stdpath("data") .. "/site/pack/*/start/plenary.nvim", false, true)
   if #matches > 0 then
     vim.opt.runtimepath:prepend(matches[1])

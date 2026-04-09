@@ -6,5 +6,5 @@ if not ok then
 end
 
 test_harness.test_directory(tests_dir, {
-  minimal_init = "tests/minimal_init.lua",
+  minimal_init = "tests/init.lua",
 })
