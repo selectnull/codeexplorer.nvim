@@ -17,7 +17,7 @@ local function format_symbol(entry)
   local marker = "  "
 
   if entry.has_children then
-    marker = entry.expanded and "v " or "> "
+    marker = entry.expanded and "▼ " or "▶ "
   end
 
   return indent .. marker .. symbol.name .. " (" .. symbol.kind .. ")"
