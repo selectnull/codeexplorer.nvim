@@ -24,3 +24,7 @@ make test
 ```
 
 `make test` will clone `plenary.nvim` into `.deps/` on first run.
+
+## LICENSE
+
+MIT.
