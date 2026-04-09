@@ -1,6 +1,6 @@
-# CodeExplorer
+# CodeExplorer.nvim
 
-Simple LSP symbols code explorer.
+Simple LSP symbols code explorer Neovim plugin.
 
 Requires Neovim 0.12+ (might work in previous versions, did not test it).
 
