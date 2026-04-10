@@ -8,13 +8,13 @@ Requires Neovim 0.12+ (might work in previous versions, did not test it).
 
 ```lua
 vim.pack.add {"https://github.com/selectnull/codeexplorer.nvim"}
-
-vim.keymap.set("n", "<c-cr>", function()
-  require "codeexplorer"
-  vim.cmd.codeexplorer()
-end, { desc = "open codeexplorer" })
-
+require("codeexplorer").setup { key = "<C-CR>" }
 ```
+
+`key` is any valid Vim keymap and if left out, the keymap will not be set.
+Calling `setup` is not required, you can always always
+`:lua require('codeexplorer').run()` and bind to a key yourself.
+
 ## Development
 
 From the project root:
@@ -23,7 +23,7 @@ From the project root:
 make test
 ```
 
-`make test` will clone `plenary.nvim` into `.deps/` on first run.
+`make test` will clone `plenary.nvim` into `.deps/` on the first run.
 
 ## LICENSE
 
