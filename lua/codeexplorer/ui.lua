@@ -5,6 +5,9 @@ local M = {
   expanded = nil,
   filename = nil,
   buf = nil,
+  config = {
+    icons = true,
+  },
 }
 
 local utils = require "codeexplorer.utils"
@@ -38,6 +41,58 @@ local kind_highlights = {
   Operator = "CodeExplorerKindOperator",
   TypeParameter = "CodeExplorerKindTypeParameter",
 }
+
+local default_kind_icons = {
+  File = "󰈙",
+  Module = "󰆧",
+  Namespace = "󰅩",
+  Package = "󰏗",
+  Class = "󰠱",
+  Method = "󰊕",
+  Property = "󰜢",
+  Field = "󰜢",
+  Constructor = "",
+  Enum = "󰕘",
+  Interface = "",
+  Function = "󰊕",
+  Variable = "󰀫",
+  Constant = "󰏿",
+  String = "󰀬",
+  Number = "󰎠",
+  Boolean = "󰨙",
+  Array = "󰅪",
+  Object = "󰅩",
+  Key = "󰌋",
+  Null = "󰟢",
+  EnumMember = "󰕘",
+  Struct = "󰠱",
+  Event = "",
+  Operator = "󰆕",
+  TypeParameter = "󰊄",
+}
+
+---@param kind string
+---@return string
+local function get_icon(kind)
+  if M.config.icons == false then
+    return ""
+  end
+
+  if type(M.config.icons) == "table" then
+    local override = M.config.icons[kind]
+    if override ~= nil then
+      if override == false then
+        return ""
+      end
+
+      if type(override) == "string" then
+        return override
+      end
+    end
+  end
+
+  return default_kind_icons[kind] or "*"
+end
 
 local function define_highlights()
   local links = {
@@ -318,22 +373,39 @@ function M:render_symbols(buf, symbols)
       marker = entry.expanded and "▼ " or "▶ "
     end
 
-    local prefix = " " .. indent .. marker
+    local icon = get_icon(symbol.kind)
+    local icon_segment = icon ~= "" and (icon .. " ") or ""
+    local prefix = " " .. indent .. marker .. icon_segment
     local line = prefix .. symbol.name .. " (" .. symbol.kind .. ")"
     local name_start_col = #prefix
     local name_end_col = name_start_col + #symbol.name
+    local icon_start_col = #(" " .. indent .. marker)
+    local icon_end_col = icon_start_col + #icon
 
     table.insert(lines, line)
     table.insert(line_segments, {
       group = kind_highlights[symbol.kind] or "Identifier",
       start_col = name_start_col,
       end_col = name_end_col,
+      icon_start_col = icon_start_col,
+      icon_end_col = icon_end_col,
     })
   end
 
   vim.api.nvim_buf_set_lines(buf, M.header_height, -1, false, lines)
 
   for i, segment in ipairs(line_segments) do
+    if segment.icon_end_col > segment.icon_start_col then
+      vim.api.nvim_buf_add_highlight(
+        buf,
+        highlights_ns,
+        segment.group,
+        M.header_height + i - 1,
+        segment.icon_start_col,
+        segment.icon_end_col
+      )
+    end
+
     vim.api.nvim_buf_add_highlight(
       buf,
       highlights_ns,
@@ -343,6 +415,13 @@ function M:render_symbols(buf, symbols)
       segment.end_col
     )
   end
+end
+
+---@param config table|nil
+function M:set_config(config)
+  self.config = vim.tbl_deep_extend("force", {
+    icons = true,
+  }, config or {})
 end
 
 --- Render symbols

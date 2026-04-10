@@ -84,4 +84,48 @@ describe("codeexplorer.ui interactions", function()
     local cursor = vim.api.nvim_win_get_cursor(0)
     assert.are.same({ 2, 4 }, cursor)
   end)
+
+  it("renders default kind icons in symbol lines", function()
+    ui:open(sample_symbols(), vim.api.nvim_buf_get_name(source_buf))
+
+    local line = vim.api.nvim_buf_get_lines(ui.buf, ui.header_height, ui.header_height + 1, false)[1]
+    assert.are.equal(" ▶ 󰠱 ClassA (Class)", line)
+  end)
+
+  it("renders without icons when disabled", function()
+    ui:set_config { icons = false }
+    ui:open(sample_symbols(), vim.api.nvim_buf_get_name(source_buf))
+
+    local line = vim.api.nvim_buf_get_lines(ui.buf, ui.header_height, ui.header_height + 1, false)[1]
+    assert.are.equal(" ▶ ClassA (Class)", line)
+  end)
+
+  it("renders overridden icon when icons is a table", function()
+    ui:set_config {
+      icons = {
+        Class = "C",
+      },
+    }
+    ui:open(sample_symbols(), vim.api.nvim_buf_get_name(source_buf))
+
+    local line = vim.api.nvim_buf_get_lines(ui.buf, ui.header_height, ui.header_height + 1, false)[1]
+    assert.are.equal(" ▶ C ClassA (Class)", line)
+  end)
+
+  it("disables icon for a specific kind when override is false", function()
+    ui:set_config {
+      icons = {
+        Method = false,
+      },
+    }
+    ui:open(sample_symbols(), vim.api.nvim_buf_get_name(source_buf))
+
+    press "l"
+
+    local first = vim.api.nvim_buf_get_lines(ui.buf, ui.header_height, ui.header_height + 1, false)[1]
+    local second = vim.api.nvim_buf_get_lines(ui.buf, ui.header_height + 1, ui.header_height + 2, false)[1]
+
+    assert.are.equal(" ▼ 󰠱 ClassA (Class)", first)
+    assert.are.equal("     method_a (Method)", second)
+  end)
 end)
