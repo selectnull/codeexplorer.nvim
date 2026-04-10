@@ -8,6 +8,71 @@ local M = {
 }
 
 local utils = require "codeexplorer.utils"
+local highlights_ns = vim.api.nvim_create_namespace "codeexplorer_highlights"
+
+local kind_highlights = {
+  File = "CodeExplorerKindFile",
+  Module = "CodeExplorerKindModule",
+  Namespace = "CodeExplorerKindNamespace",
+  Package = "CodeExplorerKindPackage",
+  Class = "CodeExplorerKindClass",
+  Method = "CodeExplorerKindMethod",
+  Property = "CodeExplorerKindProperty",
+  Field = "CodeExplorerKindField",
+  Constructor = "CodeExplorerKindConstructor",
+  Enum = "CodeExplorerKindEnum",
+  Interface = "CodeExplorerKindInterface",
+  Function = "CodeExplorerKindFunction",
+  Variable = "CodeExplorerKindVariable",
+  Constant = "CodeExplorerKindConstant",
+  String = "CodeExplorerKindString",
+  Number = "CodeExplorerKindNumber",
+  Boolean = "CodeExplorerKindBoolean",
+  Array = "CodeExplorerKindArray",
+  Object = "CodeExplorerKindObject",
+  Key = "CodeExplorerKindKey",
+  Null = "CodeExplorerKindNull",
+  EnumMember = "CodeExplorerKindEnumMember",
+  Struct = "CodeExplorerKindStruct",
+  Event = "CodeExplorerKindEvent",
+  Operator = "CodeExplorerKindOperator",
+  TypeParameter = "CodeExplorerKindTypeParameter",
+}
+
+local function define_highlights()
+  local links = {
+    CodeExplorerKindFile = "Directory",
+    CodeExplorerKindModule = "Include",
+    CodeExplorerKindNamespace = "Include",
+    CodeExplorerKindPackage = "Include",
+    CodeExplorerKindClass = "Type",
+    CodeExplorerKindMethod = "Function",
+    CodeExplorerKindProperty = "Identifier",
+    CodeExplorerKindField = "Identifier",
+    CodeExplorerKindConstructor = "Function",
+    CodeExplorerKindEnum = "Type",
+    CodeExplorerKindInterface = "Type",
+    CodeExplorerKindFunction = "Function",
+    CodeExplorerKindVariable = "Identifier",
+    CodeExplorerKindConstant = "Constant",
+    CodeExplorerKindString = "String",
+    CodeExplorerKindNumber = "Number",
+    CodeExplorerKindBoolean = "Boolean",
+    CodeExplorerKindArray = "Type",
+    CodeExplorerKindObject = "Type",
+    CodeExplorerKindKey = "Identifier",
+    CodeExplorerKindNull = "Comment",
+    CodeExplorerKindEnumMember = "Constant",
+    CodeExplorerKindStruct = "Type",
+    CodeExplorerKindEvent = "Special",
+    CodeExplorerKindOperator = "Operator",
+    CodeExplorerKindTypeParameter = "Type",
+  }
+
+  for group, target in pairs(links) do
+    vim.api.nvim_set_hl(0, group, { link = target, default = true })
+  end
+end
 
 ---@param entry codeexplorer.SymbolEntry
 ---@return string
@@ -240,17 +305,52 @@ end
 --- Render symbols
 function M:render_symbols(buf, symbols)
   local lines = {}
+  local line_segments = {}
+
+  vim.api.nvim_buf_clear_namespace(buf, highlights_ns, 0, -1)
+
   for _, entry in ipairs(symbols) do
-    local line = " " .. format_symbol(entry)
+    local symbol = entry.symbol
+    local indent = string.rep("  ", symbol.depth or 0)
+    local marker = "  "
+
+    if entry.has_children then
+      marker = entry.expanded and "▼ " or "▶ "
+    end
+
+    local prefix = " " .. indent .. marker
+    local line = prefix .. symbol.name .. " (" .. symbol.kind .. ")"
+    local name_start_col = #prefix
+    local name_end_col = name_start_col + #symbol.name
+
     table.insert(lines, line)
+    table.insert(line_segments, {
+      group = kind_highlights[symbol.kind] or "Identifier",
+      start_col = name_start_col,
+      end_col = name_end_col,
+    })
   end
+
   vim.api.nvim_buf_set_lines(buf, M.header_height, -1, false, lines)
+
+  for i, segment in ipairs(line_segments) do
+    vim.api.nvim_buf_add_highlight(
+      buf,
+      highlights_ns,
+      segment.group,
+      M.header_height + i - 1,
+      segment.start_col,
+      segment.end_col
+    )
+  end
 end
 
 --- Render symbols
 ---@param symbols codeexplorer.Symbol[] The list of symbols to render
 ---@param filename string Filename
 function M:open(symbols, filename)
+  define_highlights()
+
   self.symbols = symbols
   self.expanded = {}
   self.filename = filename
